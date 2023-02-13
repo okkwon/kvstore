@@ -15,15 +15,16 @@
  * limitations under the License.
  *
  */
+#include <grpcpp/grpcpp.h>
 
+#include <algorithm>
+#include <chrono>
 #include <iostream>
 #include <memory>
 #include <string>
 #include <vector>
 
 #include "caching_interceptor.h"
-
-#include <grpcpp/grpcpp.h>
 
 #ifdef BAZEL_BUILD
 #include "examples/protos/keyvaluestore.grpc.pb.h"
@@ -45,22 +46,30 @@ class KeyValueStoreClient {
 
   // Requests each key in the vector and displays the key and its corresponding
   // value as a pair
-  void GetValues(const std::vector<std::string>& keys) {
+  void getValue(std::string key, std::chrono::milliseconds timeout_ms =
+                                     std::chrono::milliseconds(3000)) {
     // Context for the client. It could be used to convey extra information to
     // the server and/or tweak certain RPC behaviors.
     ClientContext context;
-    auto stream = stub_->GetValues(&context);
-    for (const auto& key : keys) {
-      // Key we are sending to the server.
-      Request request;
-      request.set_key(key);
-      stream->Write(request);
+    context.set_fail_fast(false);
+    std::chrono::system_clock::time_point deadline =
+        std::chrono::system_clock::now() + timeout_ms;
+    context.set_deadline(deadline);
 
-      // Get the value for the sent key
-      Response response;
-      stream->Read(&response);
-      std::cout << key << " : " << response.value() << "\n";
-    }
+    // Key we are sending to the server.
+    Request request;
+    request.set_key(std::move(key));
+    timeout_ms = std::min(timeout_ms,
+                          std::chrono::duration_cast<std::chrono::milliseconds>(
+                              std::chrono::minutes(10)));
+    Response response;
+    auto stream = stub_->GetValues(&context);
+    stream->Write(request);
+
+    // Get the value for the sent key
+    stream->Read(&response);
+    std::cout << key << " : " << response.value() << "\n";
+
     stream->WritesDone();
     Status status = stream->Finish();
     if (!status.ok()) {
@@ -91,9 +100,9 @@ int main(int argc, char** argv) {
       "localhost:50051", grpc::InsecureChannelCredentials(), args,
       std::move(interceptor_creators));
   KeyValueStoreClient client(channel);
-  std::vector<std::string> keys = {"key1", "key2", "key3", "key4",
-                                   "key5", "key1", "key2", "key4"};
-  client.GetValues(keys);
+  std::vector<std::string> keys = {"unknown", "key1", "key2", "key3", "key4",
+                                   "key5",    "key1", "key2", "key4"};
+  client.getValue(keys[0]);
 
   return 0;
 }
