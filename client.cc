@@ -63,15 +63,10 @@ class KeyValueStoreClient {
                           std::chrono::duration_cast<std::chrono::milliseconds>(
                               std::chrono::minutes(10)));
     Response response;
-    auto stream = stub_->GetValues(&context);
-    stream->Write(request);
+    Status status = stub_->GetValue(&context, request, &response);
 
-    // Get the value for the sent key
-    stream->Read(&response);
     std::cout << key << " : " << response.value() << "\n";
 
-    stream->WritesDone();
-    Status status = stream->Finish();
     if (!status.ok()) {
       std::cout << status.error_code() << ": " << status.error_message()
                 << std::endl;

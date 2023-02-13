@@ -16,13 +16,14 @@
  *
  */
 
+#include <grpcpp/grpcpp.h>
+
 #include <iostream>
 #include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
-#include <grpcpp/grpcpp.h>
 #include "keyvaluestore.grpc.pb.h"
 
 using grpc::Server;
@@ -40,8 +41,7 @@ std::unordered_map<std::string, std::string> kv_map = {
     {"key4", "value4"}, {"key5", "value5"},
 };
 
-std::string get_value_from_map(const std::string &key) {
-
+std::string get_value_from_map(const std::string& key) {
   if (kv_map.count(key))
     return kv_map[key];
   else
@@ -50,14 +50,9 @@ std::string get_value_from_map(const std::string &key) {
 
 // Logic and data behind the server's behavior.
 class KeyValueStoreServiceImpl final : public KeyValueStore::Service {
-  Status GetValues(ServerContext* context,
-                   ServerReaderWriter<Response, Request>* stream) override {
-    Request request;
-    while (stream->Read(&request)) {
-      Response response;
-      response.set_value(get_value_from_map(request.key()));
-      stream->Write(response);
-    }
+  Status GetValue(ServerContext* context, const Request* request,
+                  Response* response) override {
+    response->set_value(get_value_from_map(request->key()));
     return Status::OK;
   }
 };

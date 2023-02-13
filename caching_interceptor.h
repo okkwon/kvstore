@@ -16,9 +16,9 @@
  *
  */
 
-#include <map>
-
 #include <grpcpp/support/client_interceptor.h>
+
+#include <map>
 
 #ifdef BAZEL_BUILD
 #include "examples/protos/keyvaluestore.grpc.pb.h"
@@ -45,7 +45,7 @@ class CachingInterceptor : public grpc::experimental::Interceptor {
       // Create a stream on which this interceptor can make requests
       stub_ = keyvaluestore::KeyValueStore::NewStub(
           methods->GetInterceptedChannel());
-      stream_ = stub_->GetValues(&context_);
+      // stream_ = stub_->GetValues(&context_);
     }
     if (methods->QueryInterceptionHookPoint(
             grpc::experimental::InterceptionHookPoints::PRE_SEND_MESSAGE)) {
@@ -79,17 +79,12 @@ class CachingInterceptor : public grpc::experimental::Interceptor {
         // Key was not found in the cache, so make a request
         keyvaluestore::Request req;
         req.set_key(requested_key);
-        stream_->Write(req);
         keyvaluestore::Response resp;
-        stream_->Read(&resp);
+        stub_->GetValue(&context_, req, &resp);
         response_ = resp.value();
         // Insert the pair in the cache for future requests
         cached_map_.insert({requested_key, response_});
       }
-    }
-    if (methods->QueryInterceptionHookPoint(
-            grpc::experimental::InterceptionHookPoints::PRE_SEND_CLOSE)) {
-      stream_->WritesDone();
     }
     if (methods->QueryInterceptionHookPoint(
             grpc::experimental::InterceptionHookPoints::PRE_RECV_MESSAGE)) {

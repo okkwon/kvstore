@@ -19,12 +19,12 @@ package keyvaluestore;
 // A simple key-value storage service
 service KeyValueStore {
   // Provides a value for each key request
-  rpc GetValues (stream Request) returns (stream Response) {}
+  rpc GetValue (Request) returns (Response) {}
 }
 
 // The request message containing the key
 message Request {
-  string key = 1;
+  bytes key = 1;
 }
 
 // The response message containing the value associated with the key
