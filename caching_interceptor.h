@@ -52,20 +52,20 @@ class CachingInterceptor : public grpc::experimental::Interceptor {
       // We know that clients perform a Read and a Write in a loop, so we don't
       // need to maintain a list of the responses.
       std::string requested_key;
-      const keyvaluestore::Request* req_msg =
-          static_cast<const keyvaluestore::Request*>(methods->GetSendMessage());
+      const keyvaluestore::GetValueRequest* req_msg =
+          static_cast<const keyvaluestore::GetValueRequest*>(
+              methods->GetSendMessage());
       if (req_msg != nullptr) {
         requested_key = req_msg->key();
       } else {
         // The non-serialized form would not be available in certain scenarios,
         // so add a fallback
-        keyvaluestore::Request req_msg;
+        keyvaluestore::GetValueRequest req_msg;
         auto* buffer = methods->GetSerializedSendMessage();
         auto copied_buffer = *buffer;
-        GPR_ASSERT(
-            grpc::SerializationTraits<keyvaluestore::Request>::Deserialize(
-                &copied_buffer, &req_msg)
-                .ok());
+        GPR_ASSERT(grpc::SerializationTraits<keyvaluestore::GetValueRequest>::
+                       Deserialize(&copied_buffer, &req_msg)
+                           .ok());
         requested_key = req_msg.key();
       }
 
@@ -77,9 +77,9 @@ class CachingInterceptor : public grpc::experimental::Interceptor {
       } else {
         std::cout << "Key " << requested_key << " not found in cache";
         // Key was not found in the cache, so make a request
-        keyvaluestore::Request req;
+        keyvaluestore::GetValueRequest req;
         req.set_key(requested_key);
-        keyvaluestore::Response resp;
+        keyvaluestore::GetValueResponse resp;
         stub_->GetValue(&context_, req, &resp);
         response_ = resp.value();
         // Insert the pair in the cache for future requests
@@ -88,8 +88,9 @@ class CachingInterceptor : public grpc::experimental::Interceptor {
     }
     if (methods->QueryInterceptionHookPoint(
             grpc::experimental::InterceptionHookPoints::PRE_RECV_MESSAGE)) {
-      keyvaluestore::Response* resp =
-          static_cast<keyvaluestore::Response*>(methods->GetRecvMessage());
+      keyvaluestore::GetValueResponse* resp =
+          static_cast<keyvaluestore::GetValueResponse*>(
+              methods->GetRecvMessage());
       resp->set_value(response_);
     }
     if (methods->QueryInterceptionHookPoint(
@@ -112,8 +113,8 @@ class CachingInterceptor : public grpc::experimental::Interceptor {
  private:
   grpc::ClientContext context_;
   std::unique_ptr<keyvaluestore::KeyValueStore::Stub> stub_;
-  std::unique_ptr<
-      grpc::ClientReaderWriter<keyvaluestore::Request, keyvaluestore::Response>>
+  std::unique_ptr<grpc::ClientReaderWriter<keyvaluestore::GetValueRequest,
+                                           keyvaluestore::GetValueResponse>>
       stream_;
   std::map<std::string, std::string> cached_map_;
   std::string response_;

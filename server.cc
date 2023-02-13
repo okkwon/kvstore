@@ -31,9 +31,9 @@ using grpc::ServerBuilder;
 using grpc::ServerContext;
 using grpc::ServerReaderWriter;
 using grpc::Status;
+using keyvaluestore::GetValueRequest;
+using keyvaluestore::GetValueResponse;
 using keyvaluestore::KeyValueStore;
-using keyvaluestore::Request;
-using keyvaluestore::Response;
 
 // key value
 std::unordered_map<std::string, std::string> kv_map = {
@@ -50,8 +50,8 @@ std::string get_value_from_map(const std::string& key) {
 
 // Logic and data behind the server's behavior.
 class KeyValueStoreServiceImpl final : public KeyValueStore::Service {
-  Status GetValue(ServerContext* context, const Request* request,
-                  Response* response) override {
+  Status GetValue(ServerContext* context, const GetValueRequest* request,
+                  GetValueResponse* response) override {
     response->set_value(get_value_from_map(request->key()));
     return Status::OK;
   }

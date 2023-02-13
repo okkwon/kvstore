@@ -35,17 +35,17 @@
 using grpc::Channel;
 using grpc::ClientContext;
 using grpc::Status;
+using keyvaluestore::GetValueRequest;
+using keyvaluestore::GetValueResponse;
 using keyvaluestore::KeyValueStore;
-using keyvaluestore::Request;
-using keyvaluestore::Response;
 
 class KeyValueStoreClient {
  public:
   KeyValueStoreClient(std::shared_ptr<Channel> channel)
       : stub_(KeyValueStore::NewStub(channel)) {}
 
-  // Requests each key in the vector and displays the key and its corresponding
-  // value as a pair
+  // GetValueRequests each key in the vector and displays the key and its
+  // corresponding value as a pair
   void getValue(std::string key, std::chrono::milliseconds timeout_ms =
                                      std::chrono::milliseconds(3000)) {
     // Context for the client. It could be used to convey extra information to
@@ -57,12 +57,12 @@ class KeyValueStoreClient {
     context.set_deadline(deadline);
 
     // Key we are sending to the server.
-    Request request;
+    GetValueRequest request;
     request.set_key(std::move(key));
     timeout_ms = std::min(timeout_ms,
                           std::chrono::duration_cast<std::chrono::milliseconds>(
                               std::chrono::minutes(10)));
-    Response response;
+    GetValueResponse response;
     Status status = stub_->GetValue(&context, request, &response);
 
     std::cout << key << " : " << response.value() << "\n";
