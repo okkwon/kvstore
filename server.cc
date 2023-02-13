@@ -19,6 +19,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include <grpcpp/grpcpp.h>
@@ -33,23 +34,18 @@ using keyvaluestore::KeyValueStore;
 using keyvaluestore::Request;
 using keyvaluestore::Response;
 
-struct kv_pair {
-  const char* key;
-  const char* value;
-};
-
-static const kv_pair kvs_map[] = {
+// key value
+std::unordered_map<std::string, std::string> kv_map = {
     {"key1", "value1"}, {"key2", "value2"}, {"key3", "value3"},
     {"key4", "value4"}, {"key5", "value5"},
 };
 
-const char* get_value_from_map(const char* key) {
-  for (size_t i = 0; i < sizeof(kvs_map) / sizeof(kv_pair); ++i) {
-    if (strcmp(key, kvs_map[i].key) == 0) {
-      return kvs_map[i].value;
-    }
-  }
-  return "";
+std::string get_value_from_map(const std::string &key) {
+
+  if (kv_map.count(key))
+    return kv_map[key];
+  else
+    return "";
 }
 
 // Logic and data behind the server's behavior.
@@ -59,7 +55,7 @@ class KeyValueStoreServiceImpl final : public KeyValueStore::Service {
     Request request;
     while (stream->Read(&request)) {
       Response response;
-      response.set_value(get_value_from_map(request.key().c_str()));
+      response.set_value(get_value_from_map(request.key()));
       stream->Write(response);
     }
     return Status::OK;
