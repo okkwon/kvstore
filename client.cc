@@ -46,7 +46,7 @@ class KeyValueStoreClient {
 
   // GetValueRequests each key in the vector and displays the key and its
   // corresponding value as a pair
-  void getValue(std::string key, std::chrono::milliseconds timeout_ms =
+  void GetValue(std::string key, std::chrono::milliseconds timeout_ms =
                                      std::chrono::milliseconds(3000)) {
     // Context for the client. It could be used to convey extra information to
     // the server and/or tweak certain RPC behaviors.
@@ -97,7 +97,7 @@ int main(int argc, char** argv) {
   KeyValueStoreClient client(channel);
   std::vector<std::string> keys = {"unknown", "key1", "key2", "key3", "key4",
                                    "key5",    "key1", "key2", "key4"};
-  client.getValue(keys[0]);
+  client.GetValue(keys[0]);
 
   return 0;
 }
