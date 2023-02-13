@@ -75,7 +75,7 @@ class CachingInterceptor : public grpc::experimental::Interceptor {
         std::cout << "Key " << requested_key << "found in map";
         response_ = search->second;
       } else {
-        std::cout << "Key " << requested_key << "not found in cache";
+        std::cout << "Key " << requested_key << " not found in cache";
         // Key was not found in the cache, so make a request
         keyvaluestore::Request req;
         req.set_key(requested_key);
