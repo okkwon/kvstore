@@ -38,6 +38,8 @@ using grpc::Status;
 using keyvaluestore::GetValueRequest;
 using keyvaluestore::GetValueResponse;
 using keyvaluestore::KeyValueStore;
+using keyvaluestore::SetValueRequest;
+using keyvaluestore::SetValueResponse;
 
 class KeyValueStoreClient {
  public:
@@ -77,6 +79,29 @@ class KeyValueStoreClient {
     }
   }
 
+  // GetValueRequests each key in the vector and displays the key and its
+  // corresponding value as a pair
+  void SetValue(std::string key, std::string value) {
+    // Context for the client. It could be used to convey extra information to
+    // the server and/or tweak certain RPC behaviors.
+    ClientContext context;
+
+    SetValueRequest request;
+    request.set_key(std::move(key));
+    request.set_value(std::move(value));
+
+    SetValueResponse response;
+    Status status = stub_->SetValue(&context, request, &response);
+
+    std::cout << "SetValue(): " << key << " = " << value << ")\n";
+
+    if (!status.ok()) {
+      std::cout << status.error_code() << ": " << status.error_message()
+                << std::endl;
+      std::cout << "RPC failed";
+    }
+  }
+
  private:
   std::unique_ptr<KeyValueStore::Stub> stub_;
 };
@@ -98,9 +123,9 @@ int main(int argc, char** argv) {
       "localhost:50051", grpc::InsecureChannelCredentials(), args,
       std::move(interceptor_creators));
   KeyValueStoreClient client(channel);
-  std::vector<std::string> keys = {"unknown", "key1", "key2", "key3", "key4",
-                                   "key5",    "key1", "key2", "key4"};
-  client.GetValue(keys[0]);
+  client.SetValue("key1", "mykey1");
+  client.GetValue("key1");
+  client.GetValue("key1");
 
   return 0;
 }

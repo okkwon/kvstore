@@ -17,6 +17,7 @@
  */
 
 #include <grpcpp/grpcpp.h>
+#include <grpcpp/support/status.h>
 
 #include <iostream>
 #include <memory>
@@ -34,6 +35,8 @@ using grpc::Status;
 using keyvaluestore::GetValueRequest;
 using keyvaluestore::GetValueResponse;
 using keyvaluestore::KeyValueStore;
+using keyvaluestore::SetValueRequest;
+using keyvaluestore::SetValueResponse;
 
 // key value
 std::unordered_map<std::string, std::string> kv_map = {
@@ -53,6 +56,17 @@ class KeyValueStoreServiceImpl final : public KeyValueStore::Service {
   Status GetValue(ServerContext* context, const GetValueRequest* request,
                   GetValueResponse* response) override {
     response->set_value(get_value_from_map(request->key()));
+    return Status::OK;
+  }
+
+  Status SetValue(ServerContext* context, const SetValueRequest* request,
+                  SetValueResponse* response) override {
+    if (kv_map.count(request->key())) {
+      // We expect only one client sets a value with a key only once.
+      return Status(grpc::StatusCode::ALREADY_EXISTS,
+                    "Updating a value is not supported");
+    }
+    kv_map[request->key()] = request->value();
     return Status::OK;
   }
 };
