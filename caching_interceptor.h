@@ -42,10 +42,9 @@ class CachingInterceptor : public grpc::experimental::Interceptor {
                 PRE_SEND_INITIAL_METADATA)) {
       // Hijack all calls
       hijack = true;
-      // Create a stream on which this interceptor can make requests
+      // Create a stub on which this interceptor can make requests
       stub_ = keyvaluestore::KeyValueStore::NewStub(
           methods->GetInterceptedChannel());
-      // stream_ = stub_->GetValues(&context_);
     }
     if (methods->QueryInterceptionHookPoint(
             grpc::experimental::InterceptionHookPoints::PRE_SEND_MESSAGE)) {
@@ -113,9 +112,6 @@ class CachingInterceptor : public grpc::experimental::Interceptor {
  private:
   grpc::ClientContext context_;
   std::unique_ptr<keyvaluestore::KeyValueStore::Stub> stub_;
-  std::unique_ptr<grpc::ClientReaderWriter<keyvaluestore::GetValueRequest,
-                                           keyvaluestore::GetValueResponse>>
-      stream_;
   std::map<std::string, std::string> cached_map_;
   std::string response_;
 };
