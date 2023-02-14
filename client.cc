@@ -62,6 +62,9 @@ class KeyValueStoreClient {
     timeout_ms = std::min(timeout_ms,
                           std::chrono::duration_cast<std::chrono::milliseconds>(
                               std::chrono::minutes(10)));
+    // FIXME: add timeout_ms field to the message and use it to wait for the key
+    // to be set by another client.
+
     GetValueResponse response;
     Status status = stub_->GetValue(&context, request, &response);
 
