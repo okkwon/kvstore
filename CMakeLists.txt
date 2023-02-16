@@ -61,7 +61,7 @@ target_link_libraries(kvs
   ${_PROTOBUF_LIBPROTOBUF})
 
 # client
-add_executable(client "client.cc" "caching_interceptor.h")
+add_executable(client "client.cc")
 target_link_libraries(client
   kvs
   ${_REFLECTION}

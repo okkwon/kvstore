@@ -24,8 +24,6 @@
 #include <string>
 #include <vector>
 
-#include "caching_interceptor.h"
-
 #ifdef BAZEL_BUILD
 #include "examples/protos/keyvaluestore.grpc.pb.h"
 #else
@@ -53,6 +51,9 @@ class KeyValueStoreClient {
     // Context for the client. It could be used to convey extra information to
     // the server and/or tweak certain RPC behaviors.
     ClientContext context;
+
+    std::cout << "GetValue(\"" << key << "\") -> ";
+
     context.set_fail_fast(false);
     std::chrono::system_clock::time_point deadline =
         std::chrono::system_clock::now() + timeout_ms;
@@ -70,7 +71,7 @@ class KeyValueStoreClient {
     GetValueResponse response;
     Status status = stub_->GetValue(&context, request, &response);
 
-    std::cout << key << " : " << response.value() << "\n";
+    std::cout << "\"" << response.value() << "\"\n";
 
     if (!status.ok()) {
       std::cout << status.error_code() << ": " << status.error_message()
@@ -86,14 +87,14 @@ class KeyValueStoreClient {
     // the server and/or tweak certain RPC behaviors.
     ClientContext context;
 
+    std::cout << "SetValue(\"" << key << "\", \"" << value << "\")\n";
+
     SetValueRequest request;
     request.set_key(std::move(key));
     request.set_value(std::move(value));
 
     SetValueResponse response;
     Status status = stub_->SetValue(&context, request, &response);
-
-    std::cout << "SetValue(): " << key << " = " << value << ")\n";
 
     if (!status.ok()) {
       std::cout << status.error_code() << ": " << status.error_message()
@@ -111,17 +112,8 @@ int main(int argc, char** argv) {
   // are created. This channel models a connection to an endpoint (in this case,
   // localhost at port 50051). We indicate that the channel isn't authenticated
   // (use of InsecureChannelCredentials()).
-  // In this example, we are using a cache which has been added in as an
-  // interceptor.
-  grpc::ChannelArguments args;
-  std::vector<
-      std::unique_ptr<grpc::experimental::ClientInterceptorFactoryInterface>>
-      interceptor_creators;
-  interceptor_creators.push_back(std::unique_ptr<CachingInterceptorFactory>(
-      new CachingInterceptorFactory()));
-  auto channel = grpc::experimental::CreateCustomChannelWithInterceptors(
-      "localhost:50051", grpc::InsecureChannelCredentials(), args,
-      std::move(interceptor_creators));
+  auto channel = grpc::CreateChannel("localhost:50051",
+                                     grpc::InsecureChannelCredentials());
   KeyValueStoreClient client(channel);
   client.SetValue("key1", "mykey1");
   client.GetValue("key1");
