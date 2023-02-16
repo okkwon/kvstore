@@ -44,15 +44,20 @@ class KeyValueStoreClient {
   KeyValueStoreClient(std::shared_ptr<Channel> channel)
       : stub_(KeyValueStore::NewStub(channel)) {}
 
-  // GetValueRequests each key in the vector and displays the key and its
-  // corresponding value as a pair
+  // GetValue gets a value for the requested key.
   void GetValue(std::string key, std::chrono::milliseconds timeout_ms =
                                      std::chrono::milliseconds(3000)) {
+    std::cout << "GetValue(\"" << key << "\") -> ";
+
+    // check the cache first
+    if (kv_map.count(key)) {
+      std::cout << "\"" << kv_map[key] << "\" (cached)\n";
+      return;
+    }
+
     // Context for the client. It could be used to convey extra information to
     // the server and/or tweak certain RPC behaviors.
     ClientContext context;
-
-    std::cout << "GetValue(\"" << key << "\") -> ";
 
     context.set_fail_fast(false);
     std::chrono::system_clock::time_point deadline =
@@ -80,14 +85,17 @@ class KeyValueStoreClient {
     }
   }
 
-  // GetValueRequests each key in the vector and displays the key and its
-  // corresponding value as a pair
+  // SetValue sets a value for the key. Updating (Setting a value for an
+  // existing key) is not supported by the server.
   void SetValue(std::string key, std::string value) {
     // Context for the client. It could be used to convey extra information to
     // the server and/or tweak certain RPC behaviors.
     ClientContext context;
 
     std::cout << "SetValue(\"" << key << "\", \"" << value << "\")\n";
+
+    // Put the key and value in the cache.
+    kv_map[key] = value;
 
     SetValueRequest request;
     request.set_key(std::move(key));
@@ -105,6 +113,8 @@ class KeyValueStoreClient {
 
  private:
   std::unique_ptr<KeyValueStore::Stub> stub_;
+  // cache for key/value
+  std::unordered_map<std::string, std::string> kv_map;
 };
 
 int main(int argc, char** argv) {
