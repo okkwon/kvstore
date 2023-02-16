@@ -39,10 +39,7 @@ using keyvaluestore::SetValueRequest;
 using keyvaluestore::SetValueResponse;
 
 // key value
-std::unordered_map<std::string, std::string> kv_map = {
-    {"key1", "value1"}, {"key2", "value2"}, {"key3", "value3"},
-    {"key4", "value4"}, {"key5", "value5"},
-};
+std::unordered_map<std::string, std::string> kv_map;
 
 std::string get_value_from_map(const std::string& key) {
   if (kv_map.count(key))
@@ -64,7 +61,7 @@ class KeyValueStoreServiceImpl final : public KeyValueStore::Service {
     if (kv_map.count(request->key())) {
       // We expect only one client sets a value with a key only once.
       return Status(grpc::StatusCode::ALREADY_EXISTS,
-                    "Updating a value is not supported");
+                    "Updating an existing value is not supported");
     }
     kv_map[request->key()] = request->value();
     return Status::OK;
