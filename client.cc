@@ -49,7 +49,7 @@ class KeyValueStoreClient {
                                      std::chrono::milliseconds(3000)) {
     std::cout << "GetValue(\"" << key << "\") -> ";
 
-    // check the cache first
+    // Check the cache first.
     if (kv_map.count(key)) {
       std::cout << "\"" << kv_map[key] << "\" (cached)\n";
       return;

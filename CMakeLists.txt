@@ -54,7 +54,10 @@ add_library(kvs SHARED
   ${kvs_grpc_srcs}
   ${kvs_grpc_hdrs}
   ${kvs_proto_srcs}
-  ${kvs_proto_hdrs})
+  ${kvs_proto_hdrs}
+  kvs.cc
+  kvs.h)
+
 target_link_libraries(kvs
   ${_REFLECTION}
   ${_GRPC_GRPCPP}
