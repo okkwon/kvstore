@@ -31,9 +31,14 @@ int main(int argc, char** argv) {
     exit(1);
   }
 
-  kvs_set(store, "key1", "mykey1");
-  kvs_get(store, "key1");
-  kvs_get(store, "key1");
+  char value[128];
 
+  kvs_set(store, "key1", "mykey1");
+  kvs_get(store, "key1", value, sizeof(value));
+  printf("%s\n", value);
+  kvs_get(store, "key1", value, sizeof(value));
+  printf("%s\n", value);
+
+  kvs_destroy(&store);
   return 0;
 }

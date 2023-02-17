@@ -30,14 +30,19 @@ class KeyValueStoreClient {
       : stub_(KeyValueStore::NewStub(channel)) {}
 
   // GetValue gets a value for the requested key.
-  void GetValue(std::string key, std::chrono::milliseconds timeout_ms =
-                                     std::chrono::milliseconds(3000)) {
+  Status GetValue(
+      std::string key, std::string& value,
+      std::chrono::milliseconds timeout_ms = std::chrono::milliseconds(3000)) {
     std::cout << "GetValue(\"" << key << "\") -> ";
+
+    Status status = Status::OK;
+    value = "";
 
     // Check the cache first.
     if (kv_map.count(key)) {
-      std::cout << "\"" << kv_map[key] << "\" (cached)\n";
-      return;
+      value = kv_map[key];
+      std::cout << "\"" << value << "\" (cached)\n";
+      return status;
     }
 
     // Context for the client. It could be used to convey extra information to
@@ -59,20 +64,22 @@ class KeyValueStoreClient {
     // to be set by another client.
 
     GetValueResponse response;
-    Status status = stub_->GetValue(&context, request, &response);
-
-    std::cout << "\"" << response.value() << "\"\n";
-
+    status = stub_->GetValue(&context, request, &response);
     if (!status.ok()) {
       std::cout << status.error_code() << ": " << status.error_message()
                 << std::endl;
       std::cout << "RPC failed";
     }
+
+    value = response.value();
+    std::cout << "\"" << value << "\"\n";
+
+    return status;
   }
 
   // SetValue sets a value for the key. Updating (Setting a value for an
   // existing key) is not supported by the server.
-  void SetValue(std::string key, std::string value) {
+  Status SetValue(std::string key, std::string value) {
     // Context for the client. It could be used to convey extra information to
     // the server and/or tweak certain RPC behaviors.
     ClientContext context;
@@ -94,6 +101,7 @@ class KeyValueStoreClient {
                 << std::endl;
       std::cout << "RPC failed";
     }
+    return status;
   }
 
  private:
@@ -140,10 +148,11 @@ kvsStatus_t kvs_destroy(kvs_t** store) {
   return kvsStatusOK;
 }
 
-kvsStatus_t kvs_get(kvs_t* store, const char* key) {
+kvsStatus_t kvs_get(kvs_t* store, const char* key, char* value, int n) {
+  std::string v;
   KeyValueStoreClient* client = CastToKeyValueStoreClient(store);
-  // FIXME: change the function to return a string.
-  client->GetValue(key);
+  client->GetValue(key, v);
+  strncpy(value, v.c_str(), n);
   return kvsStatusOK;
 }
 

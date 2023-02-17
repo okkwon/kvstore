@@ -30,7 +30,7 @@ kvsStatus_t kvs_create(kvs_t** store, const char* addr, kvsConfig_t* config);
 
 kvsStatus_t kvs_destroy(kvs_t** store);
 
-kvsStatus_t kvs_get(kvs_t* store, const char* key);
+kvsStatus_t kvs_get(kvs_t* store, const char* key, char* value, int n);
 
 kvsStatus_t kvs_set(kvs_t* store, const char* key, const char* val);
 
