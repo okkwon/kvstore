@@ -78,3 +78,23 @@ target_link_libraries(server
   ${_REFLECTION}
   ${_GRPC_GRPCPP}
   ${_PROTOBUF_LIBPROTOBUF})
+
+# gtest
+set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+add_subdirectory(third_party/googletest EXCLUDE_FROM_ALL)
+
+enable_testing()
+
+add_executable(
+  serverclient_test
+  serverclient_test.cc
+)
+target_link_libraries(
+  serverclient_test
+  GTest::gtest_main
+)
+
+include(GoogleTest)
+gtest_discover_tests(serverclient_test)
+
