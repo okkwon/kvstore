@@ -20,12 +20,12 @@
 #include "kvs.h"
 
 int main(int argc, char** argv) {
-  kvs_t* store;
+  kvs_client_t* kvs_client;
 
   kvsStatus_t result;
   kvsConfig_t config = {3000, 3000};
 
-  result = kvs_create(&store, "localhost:50051", &config);
+  result = kvs_client_create(&kvs_client, "localhost:50051", &config);
   if (result != kvsStatusOK) {
     std::cout << "Creation failed\n";
     exit(1);
@@ -33,12 +33,12 @@ int main(int argc, char** argv) {
 
   char value[128];
 
-  kvs_set(store, "key1", "mykey1");
-  kvs_get(store, "key1", value, sizeof(value));
+  kvs_client_set(kvs_client, "key1", "mykey1");
+  kvs_client_get(kvs_client, "key1", value, sizeof(value));
   printf("%s\n", value);
-  kvs_get(store, "key1", value, sizeof(value));
+  kvs_client_get(kvs_client, "key1", value, sizeof(value));
   printf("%s\n", value);
 
-  kvs_destroy(&store);
+  kvs_client_destroy(&kvs_client);
   return 0;
 }

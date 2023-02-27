@@ -110,18 +110,19 @@ class KeyValueStoreClient {
   std::unordered_map<std::string, std::string> kv_map;
 };
 
-static KeyValueStoreClient* CastToKeyValueStoreClient(kvs_t* kvs) {
+static KeyValueStoreClient* CastToKeyValueStoreClient(kvs_client_t* kvs) {
   return (KeyValueStoreClient*)(kvs);
 }
 
-static kvs_t* CastToKVS(KeyValueStoreClient* client) {
-  return (kvs_t*)(client);
+static kvs_client_t* CastToKVS(KeyValueStoreClient* client) {
+  return (kvs_client_t*)(client);
 }
 
 extern "C" {
 
-kvsStatus_t kvs_create(kvs_t** store, const char* addr, kvsConfig_t* config) {
-  *store = nullptr;
+kvsStatus_t kvs_client_create(kvs_client_t** kvs_client, const char* addr,
+                              kvsConfig_t* config) {
+  *kvs_client = nullptr;
 
   // Instantiate the client. It requires a channel, out of which the actual RPCs
   // are created. This channel models a connection to an endpoint (in this case,
@@ -135,22 +136,23 @@ kvsStatus_t kvs_create(kvs_t** store, const char* addr, kvsConfig_t* config) {
     return kvsStatusInternalError;
   }
 
-  *store = CastToKVS(client);
+  *kvs_client = CastToKVS(client);
   return kvsStatusOK;
 }
 
-kvsStatus_t kvs_destroy(kvs_t** store) {
-  if (*store) {
-    KeyValueStoreClient* client = CastToKeyValueStoreClient(*store);
+kvsStatus_t kvs_client_destroy(kvs_client_t** kvs_client) {
+  if (*kvs_client) {
+    KeyValueStoreClient* client = CastToKeyValueStoreClient(*kvs_client);
     delete client;
-    *store = nullptr;
+    *kvs_client = nullptr;
   }
   return kvsStatusOK;
 }
 
-kvsStatus_t kvs_get(kvs_t* store, const char* key, char* value, int n) {
+kvsStatus_t kvs_client_get(kvs_client_t* kvs_client, const char* key,
+                           char* value, int n) {
   std::string v;
-  KeyValueStoreClient* client = CastToKeyValueStoreClient(store);
+  KeyValueStoreClient* client = CastToKeyValueStoreClient(kvs_client);
   Status status = client->GetValue(key, v);
   if (status.ok()) {
     strncpy(value, v.c_str(), n);
@@ -161,8 +163,9 @@ kvsStatus_t kvs_get(kvs_t* store, const char* key, char* value, int n) {
   }
 }
 
-kvsStatus_t kvs_set(kvs_t* store, const char* key, const char* val) {
-  KeyValueStoreClient* client = CastToKeyValueStoreClient(store);
+kvsStatus_t kvs_client_set(kvs_client_t* kvs_client, const char* key,
+                           const char* val) {
+  KeyValueStoreClient* client = CastToKeyValueStoreClient(kvs_client);
   Status status = client->SetValue(key, val);
   if (status.ok()) {
     return kvsStatusOK;

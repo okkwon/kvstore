@@ -24,15 +24,18 @@ typedef struct {
 } kvsConfig_t;
 
 /* This is a C wrapper for the kvs class. */
-typedef struct kvs_t kvs_t;
+typedef struct kvs_client_t kvs_client_t;
 
-kvsStatus_t kvs_create(kvs_t** store, const char* addr, kvsConfig_t* config);
+kvsStatus_t kvs_client_create(kvs_client_t** kvs_client, const char* addr,
+                              kvsConfig_t* config);
 
-kvsStatus_t kvs_destroy(kvs_t** store);
+kvsStatus_t kvs_client_destroy(kvs_client_t** kvs_client);
 
-kvsStatus_t kvs_get(kvs_t* store, const char* key, char* value, int n);
+kvsStatus_t kvs_client_get(kvs_client_t* kvs_client, const char* key,
+                           char* value, int n);
 
-kvsStatus_t kvs_set(kvs_t* store, const char* key, const char* val);
+kvsStatus_t kvs_client_set(kvs_client_t* kvs_client, const char* key,
+                           const char* val);
 
 #ifdef __cplusplus
 }  // end extern "C"
