@@ -38,16 +38,6 @@ using keyvaluestore::KeyValueStore;
 using keyvaluestore::SetValueRequest;
 using keyvaluestore::SetValueResponse;
 
-// key value
-std::unordered_map<std::string, std::string> kv_map;
-
-std::string get_value_from_map(const std::string& key) {
-  if (kv_map.count(key))
-    return kv_map[key];
-  else
-    return "";
-}
-
 // Logic and data behind the server's behavior.
 class KeyValueStoreServiceImpl final : public KeyValueStore::Service {
   Status GetValue(ServerContext* context, const GetValueRequest* request,
@@ -66,6 +56,17 @@ class KeyValueStoreServiceImpl final : public KeyValueStore::Service {
     kv_map[request->key()] = request->value();
     return Status::OK;
   }
+
+ private:
+  std::string get_value_from_map(const std::string& key) {
+    if (kv_map.count(key))
+      return kv_map[key];
+    else
+      return "";
+  }
+
+  // key value
+  std::unordered_map<std::string, std::string> kv_map;
 };
 
 void RunServer() {
