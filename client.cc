@@ -22,11 +22,11 @@
 int main(int argc, char** argv) {
   kvs_client_t* kvs_client;
 
-  kvsStatus_t result;
-  kvsConfig_t config = {3000, 3000};
+  kvs_status_t result;
+  kvs_client_config_t config = {3000, 3000};
 
   result = kvs_client_create(&kvs_client, "localhost:50051", &config);
-  if (result != kvsStatusOK) {
+  if (result != KVS_STATUS_OK) {
     std::cout << "Creation failed\n";
     exit(1);
   }

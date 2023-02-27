@@ -120,8 +120,8 @@ static kvs_client_t* CastToKVS(KeyValueStoreClient* client) {
 
 extern "C" {
 
-kvsStatus_t kvs_client_create(kvs_client_t** kvs_client, const char* addr,
-                              kvsConfig_t* config) {
+kvs_status_t kvs_client_create(kvs_client_t** kvs_client, const char* addr,
+                               kvs_client_config_t* config) {
   *kvs_client = nullptr;
 
   // Instantiate the client. It requires a channel, out of which the actual RPCs
@@ -133,51 +133,51 @@ kvsStatus_t kvs_client_create(kvs_client_t** kvs_client, const char* addr,
 
   KeyValueStoreClient* client = new KeyValueStoreClient(channel);
   if (!client) {
-    return kvsStatusInternalError;
+    return KVS_STATUS_INTERNAL_ERROR;
   }
 
   *kvs_client = CastToKVS(client);
-  return kvsStatusOK;
+  return KVS_STATUS_OK;
 }
 
-kvsStatus_t kvs_client_destroy(kvs_client_t** kvs_client) {
+kvs_status_t kvs_client_destroy(kvs_client_t** kvs_client) {
   if (*kvs_client) {
     KeyValueStoreClient* client = CastToKeyValueStoreClient(*kvs_client);
     delete client;
     *kvs_client = nullptr;
   }
-  return kvsStatusOK;
+  return KVS_STATUS_OK;
 }
 
-kvsStatus_t kvs_client_get(kvs_client_t* kvs_client, const char* key,
-                           char* value, int n) {
+kvs_status_t kvs_client_get(kvs_client_t* kvs_client, const char* key,
+                            char* value, int n) {
   std::string v;
   KeyValueStoreClient* client = CastToKeyValueStoreClient(kvs_client);
   Status status = client->GetValue(key, v);
   if (status.ok()) {
     strncpy(value, v.c_str(), n);
-    return kvsStatusOK;
+    return KVS_STATUS_OK;
   } else {
     // TODO(okkwon): add more error types to give more useful info.
-    return kvsStatusInvalidUsage;
+    return KVS_STATUS_INVALID_USAGE;
   }
 }
 
-kvsStatus_t kvs_client_set(kvs_client_t* kvs_client, const char* key,
-                           const char* val) {
+kvs_status_t kvs_client_set(kvs_client_t* kvs_client, const char* key,
+                            const char* val) {
   KeyValueStoreClient* client = CastToKeyValueStoreClient(kvs_client);
   Status status = client->SetValue(key, val);
   if (status.ok()) {
-    return kvsStatusOK;
+    return KVS_STATUS_OK;
   } else {
     if (status.error_code() == grpc::StatusCode::ALREADY_EXISTS) {
-      return kvsStatusInvalidUsage;
+      return KVS_STATUS_INVALID_USAGE;
     } else {
       // TODO(okkwon): add more error types to give more useful info.
-      return kvsStatusInternalError;
+      return KVS_STATUS_INTERNAL_ERROR;
     }
   }
-  return kvsStatusOK;
+  return KVS_STATUS_OK;
 }
 
 }  // extern "C"

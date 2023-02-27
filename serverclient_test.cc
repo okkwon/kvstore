@@ -86,26 +86,26 @@ TEST_F(ClientServerTest, SingleClient) {
 
   kvs_client_t* kvs_client;
 
-  kvsStatus_t result;
-  kvsConfig_t config = {3000, 3000};
+  kvs_status_t result;
+  kvs_client_config_t config = {3000, 3000};
 
   result = kvs_client_create(&kvs_client, "localhost:50051", &config);
-  EXPECT_EQ(result, kvsStatusOK);
+  EXPECT_EQ(result, KVS_STATUS_OK);
 
   char value[128];
 
-  EXPECT_EQ(kvs_client_set(kvs_client, "key1", "mykey1"), kvsStatusOK);
+  EXPECT_EQ(kvs_client_set(kvs_client, "key1", "mykey1"), KVS_STATUS_OK);
   EXPECT_EQ(kvs_client_get(kvs_client, "key1", value, sizeof(value)),
-            kvsStatusOK);
+            KVS_STATUS_OK);
   EXPECT_STREQ(value, "mykey1");
 
-  EXPECT_EQ(kvs_client_set(kvs_client, "key2", "mykey2"), kvsStatusOK);
+  EXPECT_EQ(kvs_client_set(kvs_client, "key2", "mykey2"), KVS_STATUS_OK);
   EXPECT_EQ(kvs_client_get(kvs_client, "key2", value, sizeof(value)),
-            kvsStatusOK);
+            KVS_STATUS_OK);
   EXPECT_STREQ(value, "mykey2");
 
   EXPECT_EQ(kvs_client_set(kvs_client, "key1", "mynewkey1"),
-            kvsStatusInvalidUsage);
+            KVS_STATUS_INVALID_USAGE);
 
   kvs_client_destroy(&kvs_client);
 }
