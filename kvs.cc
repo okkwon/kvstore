@@ -151,14 +151,29 @@ kvsStatus_t kvs_destroy(kvs_t** store) {
 kvsStatus_t kvs_get(kvs_t* store, const char* key, char* value, int n) {
   std::string v;
   KeyValueStoreClient* client = CastToKeyValueStoreClient(store);
-  client->GetValue(key, v);
-  strncpy(value, v.c_str(), n);
-  return kvsStatusOK;
+  Status status = client->GetValue(key, v);
+  if (status.ok()) {
+    strncpy(value, v.c_str(), n);
+    return kvsStatusOK;
+  } else {
+    // TODO(okkwon): add more error types to give more useful info.
+    return kvsStatusInvalidUsage;
+  }
 }
 
 kvsStatus_t kvs_set(kvs_t* store, const char* key, const char* val) {
   KeyValueStoreClient* client = CastToKeyValueStoreClient(store);
-  client->SetValue(key, val);
+  Status status = client->SetValue(key, val);
+  if (status.ok()) {
+    return kvsStatusOK;
+  } else {
+    if (status.error_code() == grpc::StatusCode::ALREADY_EXISTS) {
+      return kvsStatusInvalidUsage;
+    } else {
+      // TODO(okkwon): add more error types to give more useful info.
+      return kvsStatusInternalError;
+    }
+  }
   return kvsStatusOK;
 }
 
