@@ -52,7 +52,7 @@ class KeyValueStoreServiceImpl final : public KeyValueStore::Service {
 
 class ClientServerTest : public ::testing::Test {
  public:
-  void StartService(int num_nodes, const std::string server_addr) {
+  void StartService(int num_nodes, const std::string& server_addr) {
     ServerBuilder builder;
     // Listen on the given address without any authentication mechanism.
     builder.AddListeningPort(server_addr, grpc::InsecureServerCredentials());
