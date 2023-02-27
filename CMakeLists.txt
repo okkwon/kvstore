@@ -93,6 +93,7 @@ add_executable(
 target_link_libraries(
   serverclient_test
   GTest::gtest_main
+  kvs
 )
 
 include(GoogleTest)
