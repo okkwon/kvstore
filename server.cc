@@ -15,77 +15,13 @@
  * limitations under the License.
  *
  */
+#include "kvs.h"
 
-#include <grpcpp/grpcpp.h>
-#include <grpcpp/support/status.h>
-
-#include <iostream>
-#include <memory>
-#include <string>
-#include <unordered_map>
-#include <vector>
-
-#include "keyvaluestore.grpc.pb.h"
-
-using grpc::Server;
-using grpc::ServerBuilder;
-using grpc::ServerContext;
-using grpc::ServerReaderWriter;
-using grpc::Status;
-using keyvaluestore::GetValueRequest;
-using keyvaluestore::GetValueResponse;
-using keyvaluestore::KeyValueStore;
-using keyvaluestore::SetValueRequest;
-using keyvaluestore::SetValueResponse;
-
-// Logic and data behind the server's behavior.
-class KeyValueStoreServiceImpl final : public KeyValueStore::Service {
-  Status GetValue(ServerContext* context, const GetValueRequest* request,
-                  GetValueResponse* response) override {
-    response->set_value(get_value_from_map(request->key()));
-    return Status::OK;
-  }
-
-  Status SetValue(ServerContext* context, const SetValueRequest* request,
-                  SetValueResponse* response) override {
-    if (kv_map.count(request->key())) {
-      // We expect only one client sets a value with a key only once.
-      return Status(grpc::StatusCode::ALREADY_EXISTS,
-                    "Updating an existing value is not supported");
-    }
-    kv_map[request->key()] = request->value();
-    return Status::OK;
-  }
-
- private:
-  std::string get_value_from_map(const std::string& key) {
-    if (kv_map.count(key))
-      return kv_map[key];
-    else
-      return "";
-  }
-
-  // key value
-  std::unordered_map<std::string, std::string> kv_map;
-};
 
 void RunServer() {
-  std::string server_address("0.0.0.0:50051");
-  KeyValueStoreServiceImpl service;
-
-  ServerBuilder builder;
-  // Listen on the given address without any authentication mechanism.
-  builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
-  // Register "service" as the instance through which we'll communicate with
-  // clients. In this case, it corresponds to an *synchronous* service.
-  builder.RegisterService(&service);
-  // Finally assemble the server.
-  std::unique_ptr<Server> server(builder.BuildAndStart());
-  std::cout << "Server listening on " << server_address << std::endl;
-
-  // Wait for the server to shutdown. Note that some other thread must be
-  // responsible for shutting down the server for this call to ever return.
-  server->Wait();
+  kvs_server_t *kvs_server = nullptr;
+  kvs_server_create(&kvs_server, "localhost:50051");
+  kvs_server_wait(kvs_server);
 }
 
 int main(int argc, char** argv) {

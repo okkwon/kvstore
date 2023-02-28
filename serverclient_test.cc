@@ -19,64 +19,26 @@ using keyvaluestore::SetValueResponse;
 namespace iree {
 namespace {
 
-// Logic and data behind the server's behavior.
-class KeyValueStoreServiceImpl final : public KeyValueStore::Service {
-  Status GetValue(ServerContext* context, const GetValueRequest* request,
-                  GetValueResponse* response) override {
-    response->set_value(get_value_from_map(request->key()));
-    return Status::OK;
-  }
-
-  Status SetValue(ServerContext* context, const SetValueRequest* request,
-                  SetValueResponse* response) override {
-    if (kv_map.count(request->key())) {
-      // We expect only one client sets a value with a key only once.
-      return Status(grpc::StatusCode::ALREADY_EXISTS,
-                    "Updating an existing value is not supported");
-    }
-    kv_map[request->key()] = request->value();
-    return Status::OK;
-  }
-
- private:
-  std::string get_value_from_map(const std::string& key) {
-    if (kv_map.count(key))
-      return kv_map[key];
-    else
-      return "";
-  }
-
-  // key value
-  std::unordered_map<std::string, std::string> kv_map;
-};
-
 class ClientServerTest : public ::testing::Test {
  public:
   void StartService(int num_nodes, const std::string& server_addr) {
-    ServerBuilder builder;
-    // Listen on the given address without any authentication mechanism.
-    builder.AddListeningPort(server_addr, grpc::InsecureServerCredentials());
-    // Register "service" as the instance through which we'll communicate with
-    // clients. In this case, it corresponds to an *synchronous* service.
-    builder.RegisterService(&service_);
-    // Finally assemble the server.
-    server_ = builder.BuildAndStart();
+    kvs_server_ = nullptr;
+    kvs_status_t status = kvs_server_create(&kvs_server_, "localhost:50051");
+    EXPECT_EQ(status, KVS_STATUS_OK);
   }
 
   void Stop() {
     if (stop_is_already_called_) {
       return;
     }
-    server_->Shutdown();
+    kvs_server_destroy(&kvs_server_);
     stop_is_already_called_ = true;
   }
 
   void TearDown() override { Stop(); }
 
-  std::unique_ptr<::grpc::Server> server_;
-
  private:
-  KeyValueStoreServiceImpl service_;
+  kvs_server_t* kvs_server_;
   bool stop_is_already_called_ = false;
 };
 

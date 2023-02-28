@@ -23,7 +23,7 @@ typedef struct {
   long long timeout_ms;            /* timeout for kvs_get and kvs_set */
 } kvs_client_config_t;
 
-/* This is a C wrapper for the KeyValueStoreClient class. */
+/* These are a C wrapper for the KVS client and server. */
 typedef struct kvs_client_t kvs_client_t;
 
 kvs_status_t kvs_client_create(kvs_client_t** kvs_client, const char* addr,
@@ -36,6 +36,14 @@ kvs_status_t kvs_client_get(kvs_client_t* kvs_client, const char* key,
 
 kvs_status_t kvs_client_set(kvs_client_t* kvs_client, const char* key,
                             const char* val);
+
+typedef struct kvs_server_t kvs_server_t;
+
+kvs_status_t kvs_server_create(kvs_server_t** kvs_server, const char* addr);
+
+void kvs_server_wait(kvs_server_t* kvs_server);
+
+kvs_status_t kvs_server_destroy(kvs_server_t** kvs_server);
 
 #ifdef __cplusplus
 }  // end extern "C"

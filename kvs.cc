@@ -17,12 +17,20 @@
 
 using grpc::Channel;
 using grpc::ClientContext;
+using grpc::Server;
+using grpc::ServerBuilder;
+using grpc::ServerContext;
+using grpc::ServerReaderWriter;
 using grpc::Status;
 using keyvaluestore::GetValueRequest;
 using keyvaluestore::GetValueResponse;
 using keyvaluestore::KeyValueStore;
 using keyvaluestore::SetValueRequest;
 using keyvaluestore::SetValueResponse;
+
+//------------------------------------------------------------------------------
+// Client Class
+//------------------------------------------------------------------------------
 
 class KeyValueStoreClient {
  public:
@@ -110,15 +118,88 @@ class KeyValueStoreClient {
   std::unordered_map<std::string, std::string> kv_map;
 };
 
-static KeyValueStoreClient* CastToKeyValueStoreClient(kvs_client_t* kvs) {
-  return (KeyValueStoreClient*)(kvs);
+static KeyValueStoreClient* CastToKeyValueStoreClient(
+    kvs_client_t* kvs_client) {
+  return (KeyValueStoreClient*)(kvs_client);
 }
 
 static kvs_client_t* CastToKVS(KeyValueStoreClient* client) {
   return (kvs_client_t*)(client);
 }
 
+//------------------------------------------------------------------------------
+// Server Class
+//------------------------------------------------------------------------------
+
+// Logic and data behind the server's behavior.
+class KeyValueStoreServiceImpl final : public KeyValueStore::Service {
+  Status GetValue(ServerContext* context, const GetValueRequest* request,
+                  GetValueResponse* response) override {
+    response->set_value(get_value_from_map(request->key()));
+    return Status::OK;
+  }
+
+  Status SetValue(ServerContext* context, const SetValueRequest* request,
+                  SetValueResponse* response) override {
+    if (kv_map.count(request->key())) {
+      // We expect only one client sets a value with a key only once.
+      return Status(grpc::StatusCode::ALREADY_EXISTS,
+                    "Updating an existing value is not supported");
+    }
+    kv_map[request->key()] = request->value();
+    return Status::OK;
+  }
+
+ private:
+  std::string get_value_from_map(const std::string& key) {
+    if (kv_map.count(key))
+      return kv_map[key];
+    else
+      return "";
+  }
+
+  // key value
+  std::unordered_map<std::string, std::string> kv_map;
+};
+
+class KeyValueStoreServer {
+ public:
+  explicit KeyValueStoreServer(const std::string& addr) {
+    ServerBuilder builder;
+    // Listen on the given address without any authentication mechanism.
+    builder.AddListeningPort(addr, grpc::InsecureServerCredentials());
+    // Register "service" as the instance through which we'll communicate with
+    // clients. In this case, it corresponds to an *synchronous* service.
+    builder.RegisterService(&service_);
+    // Finally assemble the server.
+    server_ = builder.BuildAndStart();
+    std::cout << "Server listening on " << addr << std::endl;
+  }
+
+  ~KeyValueStoreServer() { server_->Shutdown(); }
+
+  void Wait() { server_->Wait(); }
+
+ private:
+  // Need to keep this service during the server's lifetime.
+  KeyValueStoreServiceImpl service_;
+  std::unique_ptr<::grpc::Server> server_;
+};
+
+static KeyValueStoreServer* CastToKeyValueStoreServer(
+    kvs_server_t* kvs_server) {
+  return (KeyValueStoreServer*)(kvs_server);
+}
+
+static kvs_server_t* CastToKVSServer(KeyValueStoreServer* server) {
+  return (kvs_server_t*)(server);
+}
+
 extern "C" {
+
+//------------------------------------------------------------------------------
+// Client C API
+//------------------------------------------------------------------------------
 
 kvs_status_t kvs_client_create(kvs_client_t** kvs_client, const char* addr,
                                kvs_client_config_t* config) {
@@ -128,8 +209,7 @@ kvs_status_t kvs_client_create(kvs_client_t** kvs_client, const char* addr,
   // are created. This channel models a connection to an endpoint (in this case,
   // localhost at port 50051). We indicate that the channel isn't authenticated
   // (use of InsecureChannelCredentials()).
-  auto channel = grpc::CreateChannel("localhost:50051",
-                                     grpc::InsecureChannelCredentials());
+  auto channel = grpc::CreateChannel(addr, grpc::InsecureChannelCredentials());
 
   KeyValueStoreClient* client = new KeyValueStoreClient(channel);
   if (!client) {
@@ -176,6 +256,35 @@ kvs_status_t kvs_client_set(kvs_client_t* kvs_client, const char* key,
       // TODO(okkwon): add more error types to give more useful info.
       return KVS_STATUS_INTERNAL_ERROR;
     }
+  }
+  return KVS_STATUS_OK;
+}
+
+//------------------------------------------------------------------------------
+// Server C API
+//------------------------------------------------------------------------------
+
+kvs_status_t kvs_server_create(kvs_server_t** kvs_server, const char* addr) {
+  *kvs_server = nullptr;
+
+  KeyValueStoreServer* server = new KeyValueStoreServer(addr);
+  if (!server) {
+    return KVS_STATUS_INTERNAL_ERROR;
+  }
+  *kvs_server = CastToKVSServer(server);
+  return KVS_STATUS_OK;
+}
+
+void kvs_server_wait(kvs_server_t* kvs_server) {
+  KeyValueStoreServer* server = CastToKeyValueStoreServer(kvs_server);
+  server->Wait();
+}
+
+kvs_status_t kvs_server_destroy(kvs_server_t** kvs_server) {
+  if (*kvs_server) {
+    KeyValueStoreServer* server = CastToKeyValueStoreServer(*kvs_server);
+    delete server;
+    *kvs_server = nullptr;
   }
   return KVS_STATUS_OK;
 }
