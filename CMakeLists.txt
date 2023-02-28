@@ -93,15 +93,15 @@ add_subdirectory(third_party/googletest EXCLUDE_FROM_ALL)
 enable_testing()
 
 add_executable(
-  serverclient_test
-  serverclient_test.cc
+  clientserver_test
+  clientserver_test.cc
 )
 target_link_libraries(
-  serverclient_test
+  clientserver_test
   GTest::gtest_main
   kvs
 )
 
 include(GoogleTest)
-gtest_discover_tests(serverclient_test)
+gtest_discover_tests(clientserver_test)
 
