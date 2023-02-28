@@ -139,8 +139,13 @@ static kvs_client_t* CastToKVS(KeyValueStoreClient* client) {
 
 // Logic and data behind the server's behavior.
 class KeyValueStoreServiceImpl final : public KeyValueStore::Service {
+ public:
+  struct Options {
+    std::chrono::milliseconds timeout_in_ms = std::chrono::milliseconds(3000);
+  };
   Status GetValue(ServerContext* context, const GetValueRequest* request,
                   GetValueResponse* response) override {
+    // TODO(okkwon): wait with a timeout.
     response->set_value(get_value_from_map(request->key()));
     return Status::OK;
   }
@@ -270,7 +275,12 @@ kvs_status_t kvs_client_set(kvs_client_t* kvs_client, const char* key,
 // Server C API
 //------------------------------------------------------------------------------
 
-kvs_status_t kvs_server_create(kvs_server_t** kvs_server, const char* addr) {
+kvs_status_t kvs_server_create(kvs_server_t** kvs_server, const char* addr,
+                               kvs_server_config_t* config) {
+  if (kvs_server == nullptr || addr == nullptr || config == nullptr) {
+    return KVS_STATUS_INVALID_ARGUMENT;
+  }
+
   *kvs_server = nullptr;
 
   KeyValueStoreServer* server = new KeyValueStoreServer(addr);
@@ -287,6 +297,10 @@ void kvs_server_wait(kvs_server_t* kvs_server) {
 }
 
 kvs_status_t kvs_server_destroy(kvs_server_t** kvs_server) {
+  if (kvs_server == nullptr) {
+    return KVS_STATUS_INVALID_ARGUMENT;
+  }
+
   if (*kvs_server) {
     KeyValueStoreServer* server = CastToKeyValueStoreServer(*kvs_server);
     delete server;

@@ -26,7 +26,6 @@ typedef enum {
 
 typedef struct {
   long long connection_timeout_ms; /* timeout for connection */
-  long long timeout_ms;            /* timeout for kvs_get and kvs_set */
 } kvs_client_config_t;
 
 /* These are a C wrapper for the KVS client and server. */
@@ -43,9 +42,14 @@ kvs_status_t kvs_client_get(kvs_client_t* kvs_client, const char* key,
 kvs_status_t kvs_client_set(kvs_client_t* kvs_client, const char* key,
                             const char* val);
 
+typedef struct {
+  long long timeout_ms; /* timeout for kvs_get and kvs_set */
+} kvs_server_config_t;
+
 typedef struct kvs_server_t kvs_server_t;
 
-kvs_status_t kvs_server_create(kvs_server_t** kvs_server, const char* addr);
+kvs_status_t kvs_server_create(kvs_server_t** kvs_server, const char* addr,
+                               kvs_server_config_t* config);
 
 void kvs_server_wait(kvs_server_t* kvs_server);
 

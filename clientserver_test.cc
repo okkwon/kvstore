@@ -29,7 +29,10 @@ class ClientServerTest : public ::testing::Test {
  public:
   void StartService(int num_nodes, const std::string& server_addr) {
     kvs_server_ = nullptr;
-    kvs_status_t status = kvs_server_create(&kvs_server_, "localhost:50051");
+    kvs_server_config_t config = {.timeout_ms = 3000};
+
+    kvs_status_t status =
+        kvs_server_create(&kvs_server_, "localhost:50051", &config);
     EXPECT_EQ(status, KVS_STATUS_OK);
   }
 
@@ -55,7 +58,7 @@ TEST_F(ClientServerTest, SingleClient) {
   kvs_client_t* kvs_client;
 
   kvs_status_t result;
-  kvs_client_config_t config = {3000, 3000};
+  kvs_client_config_t config = {.connection_timeout_ms = 3000};
 
   result = kvs_client_create(&kvs_client, "localhost:50051", &config);
   EXPECT_EQ(result, KVS_STATUS_OK);
@@ -85,7 +88,7 @@ TEST_F(ClientServerTest, TwoClients) {
   kvs_client_t* client1 = nullptr;
   kvs_client_t* client2 = nullptr;
   kvs_status_t result;
-  kvs_client_config_t config = {3000, 3000};
+  kvs_client_config_t config = {.connection_timeout_ms = 3000};
 
   result = kvs_client_create(&client1, "localhost:50051", &config);
   EXPECT_EQ(result, KVS_STATUS_OK);
