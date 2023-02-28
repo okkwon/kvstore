@@ -143,6 +143,13 @@ class KeyValueStoreServiceImpl final : public KeyValueStore::Service {
   struct Options {
     std::chrono::milliseconds timeout_in_ms = std::chrono::milliseconds(3000);
   };
+  explicit KeyValueStoreServiceImpl(const Options& options)
+      : options_(options) {}
+  KeyValueStoreServiceImpl(const KeyValueStoreServiceImpl&) = delete;
+  KeyValueStoreServiceImpl(KeyValueStoreServiceImpl&&) = delete;
+  KeyValueStoreServiceImpl& operator=(const KeyValueStoreServiceImpl&) = delete;
+  KeyValueStoreServiceImpl&& operator=(KeyValueStoreServiceImpl&&) = delete;
+
   Status GetValue(ServerContext* context, const GetValueRequest* request,
                   GetValueResponse* response) override {
     // TODO(okkwon): wait with a timeout.
@@ -171,29 +178,37 @@ class KeyValueStoreServiceImpl final : public KeyValueStore::Service {
 
   // key value
   std::unordered_map<std::string, std::string> kv_map;
+  Options options_;
 };
 
 class KeyValueStoreServer {
  public:
-  explicit KeyValueStoreServer(const std::string& addr) {
+  explicit KeyValueStoreServer(
+      const std::string& addr,
+      const KeyValueStoreServiceImpl::Options& options) {
     ServerBuilder builder;
     // Listen on the given address without any authentication mechanism.
     builder.AddListeningPort(addr, grpc::InsecureServerCredentials());
     // Register "service" as the instance through which we'll communicate with
     // clients. In this case, it corresponds to an *synchronous* service.
-    builder.RegisterService(&service_);
+    service_impl_ = std::make_unique<KeyValueStoreServiceImpl>(options);
+    builder.RegisterService(service_impl_.get());
     // Finally assemble the server.
     server_ = builder.BuildAndStart();
     std::cout << "Server listening on " << addr << std::endl;
   }
 
-  ~KeyValueStoreServer() { server_->Shutdown(); }
+  ~KeyValueStoreServer() {
+    server_->Shutdown();
+    service_impl_ = nullptr;
+    server_ = nullptr;
+  }
 
   void Wait() { server_->Wait(); }
 
  private:
   // Need to keep this service during the server's lifetime.
-  KeyValueStoreServiceImpl service_;
+  std::unique_ptr<KeyValueStoreServiceImpl> service_impl_;
   std::unique_ptr<::grpc::Server> server_;
 };
 
@@ -282,8 +297,9 @@ kvs_status_t kvs_server_create(kvs_server_t** kvs_server, const char* addr,
   }
 
   *kvs_server = nullptr;
-
-  KeyValueStoreServer* server = new KeyValueStoreServer(addr);
+  KeyValueStoreServiceImpl::Options options = {
+      .timeout_in_ms = std::chrono::milliseconds(config->timeout_ms)};
+  KeyValueStoreServer* server = new KeyValueStoreServer(addr, options);
   if (!server) {
     return KVS_STATUS_INTERNAL_ERROR;
   }
