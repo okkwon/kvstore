@@ -78,5 +78,38 @@ TEST_F(ClientServerTest, SingleClient) {
   kvs_client_destroy(&kvs_client);
 }
 
+TEST_F(ClientServerTest, TwoClients) {
+  int num_nodes = 1;
+  StartService(num_nodes, "127.0.0.1:50051");
+
+  kvs_client_t* client1 = nullptr;
+  kvs_client_t* client2 = nullptr;
+  kvs_status_t result;
+  kvs_client_config_t config = {3000, 3000};
+
+  result = kvs_client_create(&client1, "localhost:50051", &config);
+  EXPECT_EQ(result, KVS_STATUS_OK);
+
+  result = kvs_client_create(&client2, "localhost:50051", &config);
+  EXPECT_EQ(result, KVS_STATUS_OK);
+
+  char value[128];
+
+  EXPECT_EQ(kvs_client_set(client1, "key1", "mykey1"), KVS_STATUS_OK);
+  EXPECT_EQ(kvs_client_get(client2, "key1", value, sizeof(value)),
+            KVS_STATUS_OK);
+  EXPECT_STREQ(value, "mykey1");
+  EXPECT_EQ(kvs_client_get(client1, "key1", value, sizeof(value)),
+            KVS_STATUS_OK);
+  EXPECT_STREQ(value, "mykey1");
+
+  EXPECT_EQ(kvs_client_set(client2, "key2", "mykey2"), KVS_STATUS_OK);
+  EXPECT_EQ(kvs_client_get(client1, "key2", value, sizeof(value)),
+            KVS_STATUS_OK);
+  EXPECT_STREQ(value, "mykey2");
+
+  kvs_client_destroy(&client1);
+}
+
 }  // namespace
 }  // namespace iree
