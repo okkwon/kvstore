@@ -200,6 +200,8 @@ class KeyValueStoreServer {
 
   ~KeyValueStoreServer() {
     server_->Shutdown();
+    server_->Wait();
+    // The service impl must be freed up first before the server.
     service_impl_ = nullptr;
     server_ = nullptr;
   }
