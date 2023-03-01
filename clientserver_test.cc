@@ -13,7 +13,7 @@ namespace {
 
 class ClientServerTest : public ::testing::Test {
  public:
-  void StartService(int num_nodes, const std::string& server_addr) {
+  void StartServer(const std::string& server_addr) {
     kvs_server_ = nullptr;
     kvs_server_config_t config = {.timeout_ms = 100};
 
@@ -38,8 +38,7 @@ class ClientServerTest : public ::testing::Test {
 };
 
 TEST_F(ClientServerTest, SingleClient) {
-  int num_nodes = 1;
-  StartService(num_nodes, "127.0.0.1:50051");
+  StartServer("127.0.0.1:50051");
 
   kvs_client_t* kvs_client;
 
@@ -68,8 +67,7 @@ TEST_F(ClientServerTest, SingleClient) {
 }
 
 TEST_F(ClientServerTest, TwoClients) {
-  int num_nodes = 2;
-  StartService(num_nodes, "127.0.0.1:50051");
+  StartServer("127.0.0.1:50051");
 
   kvs_client_t* client1 = nullptr;
   kvs_client_t* client2 = nullptr;
@@ -101,8 +99,7 @@ TEST_F(ClientServerTest, TwoClients) {
 }
 
 TEST_F(ClientServerTest, GetValueTimeOut) {
-  int num_nodes = 1;
-  StartService(num_nodes, "127.0.0.1:50051");
+  StartServer("127.0.0.1:50051");
 
   kvs_client_t* kvs_client;
 
