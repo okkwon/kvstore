@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <condition_variable>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -64,16 +65,16 @@ class KeyValueStoreClient {
     ClientContext context;
 
     context.set_fail_fast(false);
-    std::chrono::system_clock::time_point deadline =
-        std::chrono::system_clock::now() + timeout_ms;
-    context.set_deadline(deadline);
+    // std::chrono::system_clock::time_point deadline =
+    //     std::chrono::system_clock::now() + timeout_ms;
+    // context.set_deadline(deadline);
 
     // Key we are sending to the server.
     GetValueRequest request;
     request.set_key(std::move(key));
-    timeout_ms = std::min(timeout_ms,
-                          std::chrono::duration_cast<std::chrono::milliseconds>(
-                              std::chrono::minutes(10)));
+    // timeout_ms = std::min(timeout_ms,
+    //                       std::chrono::duration_cast<std::chrono::milliseconds>(
+    //                           std::chrono::minutes(10)));
     // FIXME: add timeout_ms field to the message and use it to wait for the key
     // to be set by another client.
 
@@ -152,33 +153,42 @@ class KeyValueStoreServiceImpl final : public KeyValueStore::Service {
 
   Status GetValue(ServerContext* context, const GetValueRequest* request,
                   GetValueResponse* response) override {
-    // TODO(okkwon): wait with a timeout.
-    response->set_value(get_value_from_map(request->key()));
-    return Status::OK;
+    std::unique_lock<std::mutex> lock(mutex_);
+    auto now = std::chrono::system_clock::now();
+    if (cv_.wait_until(lock, now + options_.timeout_in_ms,
+                       [&]() { return kv_map_.count(request->key()); })) {
+      response->set_value(get_value_from_map(request->key()));
+      return Status::OK;
+    } else {
+      return Status(grpc::StatusCode::DEADLINE_EXCEEDED,
+                    "GetValue() exceeded time limit.");
+    }
   }
 
   Status SetValue(ServerContext* context, const SetValueRequest* request,
                   SetValueResponse* response) override {
-    if (kv_map.count(request->key())) {
+    if (kv_map_.count(request->key())) {
       // We expect only one client sets a value with a key only once.
       return Status(grpc::StatusCode::ALREADY_EXISTS,
                     "Updating an existing value is not supported");
     }
-    kv_map[request->key()] = request->value();
+    kv_map_[request->key()] = request->value();
     return Status::OK;
   }
 
  private:
   std::string get_value_from_map(const std::string& key) {
-    if (kv_map.count(key))
-      return kv_map[key];
+    if (kv_map_.count(key))
+      return kv_map_[key];
     else
       return "";
   }
 
   // key value
-  std::unordered_map<std::string, std::string> kv_map;
+  std::unordered_map<std::string, std::string> kv_map_;
   Options options_;
+  std::condition_variable cv_;
+  std::mutex mutex_;
 };
 
 class KeyValueStoreServer {
@@ -266,8 +276,13 @@ kvs_status_t kvs_client_get(kvs_client_t* kvs_client, const char* key,
     strncpy(value, v.c_str(), n);
     return KVS_STATUS_OK;
   } else {
-    // TODO(okkwon): add more error types to give more useful info.
-    return KVS_STATUS_INVALID_USAGE;
+    printf("grpc::StatusCode = %d\n", status.error_code());
+    if (status.error_code() == grpc::StatusCode::DEADLINE_EXCEEDED) {
+      return KVS_STATUS_DEADLINE_EXCEEDED;
+    } else {
+      // TODO(okkwon): handle error in a more detailed way.
+      return KVS_STATUS_INTERNAL_ERROR;
+    }
   }
 }
 

@@ -82,7 +82,7 @@ TEST_F(ClientServerTest, SingleClient) {
 }
 
 TEST_F(ClientServerTest, TwoClients) {
-  int num_nodes = 1;
+  int num_nodes = 2;
   StartService(num_nodes, "127.0.0.1:50051");
 
   kvs_client_t* client1 = nullptr;
@@ -112,6 +112,26 @@ TEST_F(ClientServerTest, TwoClients) {
   EXPECT_STREQ(value, "mykey2");
 
   kvs_client_destroy(&client1);
+}
+
+TEST_F(ClientServerTest, GetValueTimeOut) {
+  int num_nodes = 1;
+  StartService(num_nodes, "127.0.0.1:50051");
+
+  kvs_client_t* kvs_client;
+
+  kvs_status_t result;
+  kvs_client_config_t config = {.connection_timeout_ms = 3000};
+
+  result = kvs_client_create(&kvs_client, "localhost:50051", &config);
+  EXPECT_EQ(result, KVS_STATUS_OK);
+
+  char value[128];
+
+  EXPECT_EQ(kvs_client_get(kvs_client, "key1", value, sizeof(value)),
+            KVS_STATUS_DEADLINE_EXCEEDED);
+
+  kvs_client_destroy(&kvs_client);
 }
 
 }  // namespace
