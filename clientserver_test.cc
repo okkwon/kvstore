@@ -29,7 +29,7 @@ class ClientServerTest : public ::testing::Test {
  public:
   void StartService(int num_nodes, const std::string& server_addr) {
     kvs_server_ = nullptr;
-    kvs_server_config_t config = {.timeout_ms = 3000};
+    kvs_server_config_t config = {.timeout_ms = 100};
 
     kvs_status_t status =
         kvs_server_create(&kvs_server_, "localhost:50051", &config);
