@@ -4,23 +4,9 @@
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-#include <grpcpp/grpcpp.h>
-#include <grpcpp/support/status.h>
 #include <gtest/gtest.h>
 
-#include "keyvaluestore.grpc.pb.h"
 #include "kvs.h"
-
-using grpc::Server;
-using grpc::ServerBuilder;
-using grpc::ServerContext;
-using grpc::ServerReaderWriter;
-using grpc::Status;
-using keyvaluestore::GetValueRequest;
-using keyvaluestore::GetValueResponse;
-using keyvaluestore::KeyValueStore;
-using keyvaluestore::SetValueRequest;
-using keyvaluestore::SetValueResponse;
 
 namespace iree {
 namespace {
