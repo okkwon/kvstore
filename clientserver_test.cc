@@ -8,7 +8,7 @@
 
 #include "kvs.h"
 
-namespace iree {
+namespace kvs {
 namespace {
 
 class ClientServerTest : public ::testing::Test {
@@ -121,4 +121,4 @@ TEST_F(ClientServerTest, GetValueTimeOut) {
 }
 
 }  // namespace
-}  // namespace iree
+}  // namespace kvs
