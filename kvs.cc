@@ -155,13 +155,21 @@ class KeyValueStoreServiceImpl final : public KeyValueStore::Service {
                   GetValueResponse* response) override {
     std::unique_lock<std::mutex> lock(mutex_);
     auto now = std::chrono::system_clock::now();
-    if (cv_.wait_until(lock, now + options_.timeout_in_ms,
+    // Wake up every 1ms to check a value is set by a client.
+    // TODO(okkwon): make it an option.
+    auto wakeup_resolution = std::chrono::milliseconds(1);
+    auto deadline = now + options_.timeout_in_ms;
+    while (1) {
+      if (cv_.wait_for(lock, wakeup_resolution,
                        [&]() { return kv_map_.count(request->key()); })) {
-      response->set_value(get_value_from_map(request->key()));
-      return Status::OK;
-    } else {
-      return Status(grpc::StatusCode::DEADLINE_EXCEEDED,
-                    "GetValue() exceeded time limit.");
+        response->set_value(get_value_from_map(request->key()));
+        return Status::OK;
+      } else {
+        if (std::chrono::system_clock::now() >= deadline) {
+          return Status(grpc::StatusCode::DEADLINE_EXCEEDED,
+                        "GetValue() exceeded time limit.");
+        }
+      }
     }
   }
 
