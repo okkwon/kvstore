@@ -22,7 +22,7 @@ message GetValueRequest {
 
 // The response message containing the value associated with the key
 message GetValueResponse {
-  string value = 1;
+  bytes value = 1;
 }
 
 // The request message to set a value for a key
