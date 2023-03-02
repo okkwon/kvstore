@@ -37,10 +37,10 @@ kvs_status_t kvs_client_create(kvs_client_t** kvs_client, const char* addr,
 kvs_status_t kvs_client_destroy(kvs_client_t** kvs_client);
 
 kvs_status_t kvs_client_get(kvs_client_t* kvs_client, const char* key,
-                            char* value, int n);
+                            int key_len, char* value, int value_len);
 
 kvs_status_t kvs_client_set(kvs_client_t* kvs_client, const char* key,
-                            const char* val);
+                            int key_len, const char* value, int value_len);
 
 typedef struct {
   long long timeout_ms; /* timeout for kvs_get and kvs_set */
@@ -51,7 +51,7 @@ typedef struct kvs_server_t kvs_server_t;
 kvs_status_t kvs_server_create(kvs_server_t** kvs_server, const char* addr,
                                kvs_server_config_t* config);
 
-void kvs_server_wait(kvs_server_t* kvs_server);
+kvs_status_t kvs_server_wait(kvs_server_t* kvs_server);
 
 kvs_status_t kvs_server_destroy(kvs_server_t** kvs_server);
 

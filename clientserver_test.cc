@@ -49,19 +49,30 @@ TEST_F(ClientServerTest, SingleClient) {
   EXPECT_EQ(result, KVS_STATUS_OK);
 
   char value[128];
+  const char key1[] = "key1";
+  const char value1[] = "value1";
+  const char key2[] = "key2";
+  const char value2[] = "value2";
 
-  EXPECT_EQ(kvs_client_set(kvs_client, "key1", "mykey1"), KVS_STATUS_OK);
-  EXPECT_EQ(kvs_client_get(kvs_client, "key1", value, sizeof(value)),
-            KVS_STATUS_OK);
-  EXPECT_STREQ(value, "mykey1");
+  EXPECT_EQ(
+      kvs_client_set(kvs_client, key1, sizeof(key1), value1, sizeof(value1)),
+      KVS_STATUS_OK);
+  EXPECT_EQ(
+      kvs_client_get(kvs_client, key1, sizeof(key1), value, sizeof(value)),
+      KVS_STATUS_OK);
+  EXPECT_STREQ(value, value1);
 
-  EXPECT_EQ(kvs_client_set(kvs_client, "key2", "mykey2"), KVS_STATUS_OK);
-  EXPECT_EQ(kvs_client_get(kvs_client, "key2", value, sizeof(value)),
-            KVS_STATUS_OK);
-  EXPECT_STREQ(value, "mykey2");
+  EXPECT_EQ(
+      kvs_client_set(kvs_client, key2, sizeof(key2), value2, sizeof(value2)),
+      KVS_STATUS_OK);
+  EXPECT_EQ(
+      kvs_client_get(kvs_client, key2, sizeof(key2), value, sizeof(value)),
+      KVS_STATUS_OK);
+  EXPECT_STREQ(value, value2);
 
-  EXPECT_EQ(kvs_client_set(kvs_client, "key1", "mynewkey1"),
-            KVS_STATUS_INVALID_USAGE);
+  EXPECT_EQ(
+      kvs_client_set(kvs_client, key1, sizeof(key1), value2, sizeof(value2)),
+      KVS_STATUS_INVALID_USAGE);
 
   kvs_client_destroy(&kvs_client);
 }
@@ -81,19 +92,25 @@ TEST_F(ClientServerTest, TwoClients) {
   EXPECT_EQ(result, KVS_STATUS_OK);
 
   char value[128];
+  const char key1[] = "key1";
+  const char value1[] = "value1";
+  const char key2[] = "key2";
+  const char value2[] = "value2";
 
-  EXPECT_EQ(kvs_client_set(client1, "key1", "mykey1"), KVS_STATUS_OK);
-  EXPECT_EQ(kvs_client_get(client2, "key1", value, sizeof(value)),
+  EXPECT_EQ(kvs_client_set(client1, key1, sizeof(key1), value1, sizeof(value1)),
             KVS_STATUS_OK);
-  EXPECT_STREQ(value, "mykey1");
-  EXPECT_EQ(kvs_client_get(client1, "key1", value, sizeof(value)),
+  EXPECT_EQ(kvs_client_get(client2, key1, sizeof(key1), value, sizeof(value)),
             KVS_STATUS_OK);
-  EXPECT_STREQ(value, "mykey1");
+  EXPECT_STREQ(value, value1);
+  EXPECT_EQ(kvs_client_get(client1, key1, sizeof(key1), value, sizeof(value)),
+            KVS_STATUS_OK);
+  EXPECT_STREQ(value, value1);
 
-  EXPECT_EQ(kvs_client_set(client2, "key2", "mykey2"), KVS_STATUS_OK);
-  EXPECT_EQ(kvs_client_get(client1, "key2", value, sizeof(value)),
+  EXPECT_EQ(kvs_client_set(client2, key2, sizeof(key2), value2, sizeof(value2)),
             KVS_STATUS_OK);
-  EXPECT_STREQ(value, "mykey2");
+  EXPECT_EQ(kvs_client_get(client1, key2, sizeof(key2), value, sizeof(value)),
+            KVS_STATUS_OK);
+  EXPECT_STREQ(value, value2);
 
   kvs_client_destroy(&client1);
 }
@@ -110,9 +127,12 @@ TEST_F(ClientServerTest, GetValueTimeOut) {
   EXPECT_EQ(result, KVS_STATUS_OK);
 
   char value[128];
+  const char key1[] = "key1";
+  const char value1[] = "value1";
 
-  EXPECT_EQ(kvs_client_get(kvs_client, "key1", value, sizeof(value)),
-            KVS_STATUS_DEADLINE_EXCEEDED);
+  EXPECT_EQ(
+      kvs_client_get(kvs_client, key1, sizeof(key1), value, sizeof(value)),
+      KVS_STATUS_DEADLINE_EXCEEDED);
 
   kvs_client_destroy(&kvs_client);
 }

@@ -268,12 +268,12 @@ kvs_status_t kvs_client_destroy(kvs_client_t** kvs_client) {
 }
 
 kvs_status_t kvs_client_get(kvs_client_t* kvs_client, const char* key,
-                            char* value, int n) {
-  std::string v;
+                            int key_len, char* value, int value_len) {
+  std::string key_str(key, key_len), v;
   KeyValueStoreClient* client = CastToKeyValueStoreClient(kvs_client);
-  Status status = client->GetValue(key, v);
+  Status status = client->GetValue(key_str, v);
   if (status.ok()) {
-    strncpy(value, v.c_str(), n);
+    memcpy(value, v.data(), value_len);
     return KVS_STATUS_OK;
   } else {
     printf("grpc::StatusCode = %d\n", status.error_code());
@@ -287,9 +287,10 @@ kvs_status_t kvs_client_get(kvs_client_t* kvs_client, const char* key,
 }
 
 kvs_status_t kvs_client_set(kvs_client_t* kvs_client, const char* key,
-                            const char* val) {
+                            int key_len, const char* value, int value_len) {
   KeyValueStoreClient* client = CastToKeyValueStoreClient(kvs_client);
-  Status status = client->SetValue(key, val);
+  std::string key_str(key, key_len), value_str(value, value_len);
+  Status status = client->SetValue(key_str, value_str);
   if (status.ok()) {
     return KVS_STATUS_OK;
   } else {
@@ -324,9 +325,10 @@ kvs_status_t kvs_server_create(kvs_server_t** kvs_server, const char* addr,
   return KVS_STATUS_OK;
 }
 
-void kvs_server_wait(kvs_server_t* kvs_server) {
+kvs_status_t kvs_server_wait(kvs_server_t* kvs_server) {
   KeyValueStoreServer* server = CastToKeyValueStoreServer(kvs_server);
   server->Wait();
+  return KVS_STATUS_OK;
 }
 
 kvs_status_t kvs_server_destroy(kvs_server_t** kvs_server) {
