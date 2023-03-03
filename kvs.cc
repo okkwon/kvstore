@@ -40,9 +40,8 @@ kvs_status_t kvs_client_create(kvs_client_t** kvs_client, const char* addr,
   *kvs_client = nullptr;
 
   // Instantiate the client. It requires a channel, out of which the actual RPCs
-  // are created. This channel models a connection to an endpoint (in this case,
-  // localhost at port 50051). We indicate that the channel isn't authenticated
-  // (use of InsecureChannelCredentials()).
+  // are created. This channel models a connection to an endpoint. We indicate
+  // that the channel isn't authenticated (use of InsecureChannelCredentials()).
   auto channel = grpc::CreateChannel(addr, grpc::InsecureChannelCredentials());
 
   KeyValueStoreClient* client = new KeyValueStoreClient(channel);
