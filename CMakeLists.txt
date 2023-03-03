@@ -61,6 +61,8 @@ add_library(kvs SHARED
   ${kvs_grpc_hdrs}
   ${kvs_proto_srcs}
   ${kvs_proto_hdrs}
+  client.cc
+  client.h
   kvs.cc
   kvs.h)
 

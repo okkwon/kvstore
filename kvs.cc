@@ -16,11 +16,7 @@
 #include <string>
 #include <vector>
 
-#ifdef BAZEL_BUILD
-#include "examples/protos/keyvaluestore.grpc.pb.h"
-#else
-#include "keyvaluestore.grpc.pb.h"
-#endif
+#include "client.h"
 
 using grpc::Channel;
 using grpc::ClientContext;
@@ -34,100 +30,6 @@ using keyvaluestore::GetValueResponse;
 using keyvaluestore::KeyValueStore;
 using keyvaluestore::SetValueRequest;
 using keyvaluestore::SetValueResponse;
-
-//------------------------------------------------------------------------------
-// Client Class
-//------------------------------------------------------------------------------
-
-class KeyValueStoreClient {
- public:
-  explicit KeyValueStoreClient(std::shared_ptr<Channel> channel)
-      : stub_(KeyValueStore::NewStub(channel)) {}
-  KeyValueStoreClient(const KeyValueStoreClient&) = delete;
-  KeyValueStoreClient(KeyValueStoreClient&&) = delete;
-  KeyValueStoreClient& operator=(const KeyValueStoreClient&) = delete;
-  KeyValueStoreClient&& operator=(KeyValueStoreClient&&) = delete;
-
-  // GetValue gets a value for the requested key.
-  Status GetValue(
-      std::string key, std::string& value,
-      std::chrono::milliseconds timeout_ms = std::chrono::milliseconds(3000)) {
-    std::cout << "GetValue(\"" << key << "\") -> ";
-
-    Status status = Status::OK;
-    value = "";
-
-    // Check the cache first.
-    if (kv_map.count(key)) {
-      value = kv_map[key];
-      std::cout << "\"" << value << "\" (cached)\n";
-      return status;
-    }
-
-    // Context for the client. It could be used to convey extra information to
-    // the server and/or tweak certain RPC behaviors.
-    ClientContext context;
-
-    context.set_fail_fast(false);
-    // std::chrono::system_clock::time_point deadline =
-    //     std::chrono::system_clock::now() + timeout_ms;
-    // context.set_deadline(deadline);
-
-    // Key we are sending to the server.
-    GetValueRequest request;
-    request.set_key(std::move(key));
-    // timeout_ms = std::min(timeout_ms,
-    //                       std::chrono::duration_cast<std::chrono::milliseconds>(
-    //                           std::chrono::minutes(10)));
-    // FIXME: add timeout_ms field to the message and use it to wait for the key
-    // to be set by another client.
-
-    GetValueResponse response;
-    status = stub_->GetValue(&context, request, &response);
-    if (!status.ok()) {
-      std::cout << status.error_code() << ": " << status.error_message()
-                << std::endl;
-      std::cout << "RPC failed";
-    }
-
-    value = response.value();
-    std::cout << "\"" << value << "\"\n";
-
-    return status;
-  }
-
-  // SetValue sets a value for the key. Updating (Setting a value for an
-  // existing key) is not supported by the server.
-  Status SetValue(std::string key, std::string value) {
-    // Context for the client. It could be used to convey extra information to
-    // the server and/or tweak certain RPC behaviors.
-    ClientContext context;
-
-    std::cout << "SetValue(\"" << key << "\", \"" << value << "\")\n";
-
-    // Put the key and value in the cache.
-    kv_map[key] = value;
-
-    SetValueRequest request;
-    request.set_key(std::move(key));
-    request.set_value(std::move(value));
-
-    SetValueResponse response;
-    Status status = stub_->SetValue(&context, request, &response);
-
-    if (!status.ok()) {
-      std::cout << status.error_code() << ": " << status.error_message()
-                << std::endl;
-      std::cout << "RPC failed";
-    }
-    return status;
-  }
-
- private:
-  std::unique_ptr<KeyValueStore::Stub> stub_;
-  // cache for key/value
-  std::unordered_map<std::string, std::string> kv_map;
-};
 
 static KeyValueStoreClient* CastToKeyValueStoreClient(
     kvs_client_t* kvs_client) {
