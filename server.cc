@@ -6,15 +6,8 @@
 
 #include "server.h"
 
-#include <grpcpp/grpcpp.h>
-
-#include <algorithm>
-#include <chrono>
 #include <condition_variable>
 #include <iostream>
-#include <memory>
-#include <string>
-#include <vector>
 
 #include "keyvaluestore.grpc.pb.h"
 
