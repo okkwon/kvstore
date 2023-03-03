@@ -7,8 +7,9 @@
 #include "kvs.h"
 
 void RunServer() {
-  kvs_server_t *kvs_server = nullptr;
-  kvs_server_create(&kvs_server, "localhost:50051");
+  kvs_server_t* kvs_server = nullptr;
+  kvs_server_config_t config = {.timeout_ms = 3000};
+  kvs_server_create(&kvs_server, "localhost:50051", &config);
   kvs_server_wait(kvs_server);
 }
 

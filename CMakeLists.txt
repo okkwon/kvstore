@@ -70,16 +70,16 @@ target_link_libraries(kvs
   ${_PROTOBUF_LIBPROTOBUF})
 
 # client
-add_executable(client EXCLUDE_FROM_ALL "client.cc")
-target_link_libraries(client
+add_executable(client_app EXCLUDE_FROM_ALL "client_app.cc")
+target_link_libraries(client_app
   kvs
   ${_REFLECTION}
   ${_GRPC_GRPCPP}
   ${_PROTOBUF_LIBPROTOBUF})
 
 # server
-add_executable(server EXCLUDE_FROM_ALL "server.cc" )
-target_link_libraries(server
+add_executable(server_app EXCLUDE_FROM_ALL "server_app.cc" )
+target_link_libraries(server_app
   kvs
   ${_REFLECTION}
   ${_GRPC_GRPCPP}

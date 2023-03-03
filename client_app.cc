@@ -12,7 +12,7 @@ int main(int argc, char** argv) {
   kvs_client_t* kvs_client;
 
   kvs_status_t result;
-  kvs_client_config_t config = {3000, 3000};
+  kvs_client_config_t config = {3000};
 
   result = kvs_client_create(&kvs_client, "localhost:50051", &config);
   if (result != KVS_STATUS_OK) {
@@ -21,11 +21,12 @@ int main(int argc, char** argv) {
   }
 
   char value[128];
-
-  kvs_client_set(kvs_client, "key1", "mykey1");
-  kvs_client_get(kvs_client, "key1", value, sizeof(value));
+  const char key1[] = "key1";
+  const char value1[] = "value1";
+  kvs_client_set(kvs_client, key1, sizeof(key1), value1, sizeof(value1));
+  kvs_client_get(kvs_client, key1, sizeof(key1), value, sizeof(value));
   printf("%s\n", value);
-  kvs_client_get(kvs_client, "key1", value, sizeof(value));
+  kvs_client_get(kvs_client, key1, sizeof(key1), value, sizeof(value));
   printf("%s\n", value);
 
   kvs_client_destroy(&kvs_client);
