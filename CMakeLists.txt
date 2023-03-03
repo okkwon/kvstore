@@ -72,7 +72,7 @@ target_link_libraries(kvs
   ${_PROTOBUF_LIBPROTOBUF})
 
 # client
-add_executable(client_app EXCLUDE_FROM_ALL "client_app.cc")
+add_executable(client_app "client_app.cc")
 target_link_libraries(client_app
   kvs
   ${_REFLECTION}
@@ -80,7 +80,7 @@ target_link_libraries(client_app
   ${_PROTOBUF_LIBPROTOBUF})
 
 # server
-add_executable(server_app EXCLUDE_FROM_ALL "server_app.cc" )
+add_executable(server_app "server_app.cc" )
 target_link_libraries(server_app
   kvs
   ${_REFLECTION}
