@@ -41,8 +41,12 @@ using keyvaluestore::SetValueResponse;
 
 class KeyValueStoreClient {
  public:
-  KeyValueStoreClient(std::shared_ptr<Channel> channel)
+  explicit KeyValueStoreClient(std::shared_ptr<Channel> channel)
       : stub_(KeyValueStore::NewStub(channel)) {}
+  KeyValueStoreClient(const KeyValueStoreClient&) = delete;
+  KeyValueStoreClient(KeyValueStoreClient&&) = delete;
+  KeyValueStoreClient& operator=(const KeyValueStoreClient&) = delete;
+  KeyValueStoreClient&& operator=(KeyValueStoreClient&&) = delete;
 
   // GetValue gets a value for the requested key.
   Status GetValue(
