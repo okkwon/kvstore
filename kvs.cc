@@ -6,30 +6,10 @@
 
 #include "kvs.h"
 
-#include <grpcpp/grpcpp.h>
-
-#include <algorithm>
-#include <chrono>
-#include <condition_variable>
 #include <iostream>
-#include <memory>
-#include <string>
-#include <vector>
 
 #include "client.h"
-
-using grpc::Channel;
-using grpc::ClientContext;
-using grpc::Server;
-using grpc::ServerBuilder;
-using grpc::ServerContext;
-using grpc::ServerReaderWriter;
-using grpc::Status;
-using keyvaluestore::GetValueRequest;
-using keyvaluestore::GetValueResponse;
-using keyvaluestore::KeyValueStore;
-using keyvaluestore::SetValueRequest;
-using keyvaluestore::SetValueResponse;
+#include "server.h"
 
 static KeyValueStoreClient* CastToKeyValueStoreClient(
     kvs_client_t* kvs_client) {
@@ -39,96 +19,6 @@ static KeyValueStoreClient* CastToKeyValueStoreClient(
 static kvs_client_t* CastToKVS(KeyValueStoreClient* client) {
   return (kvs_client_t*)(client);
 }
-
-//------------------------------------------------------------------------------
-// Server Class
-//------------------------------------------------------------------------------
-
-// Logic and data behind the server's behavior.
-class KeyValueStoreServiceImpl final : public KeyValueStore::Service {
- public:
-  struct Options {
-    std::chrono::milliseconds timeout_in_ms = std::chrono::milliseconds(3000);
-  };
-  explicit KeyValueStoreServiceImpl(const Options& options)
-      : options_(options) {}
-  KeyValueStoreServiceImpl(const KeyValueStoreServiceImpl&) = delete;
-  KeyValueStoreServiceImpl(KeyValueStoreServiceImpl&&) = delete;
-  KeyValueStoreServiceImpl& operator=(const KeyValueStoreServiceImpl&) = delete;
-  KeyValueStoreServiceImpl&& operator=(KeyValueStoreServiceImpl&&) = delete;
-
-  Status GetValue(ServerContext* context, const GetValueRequest* request,
-                  GetValueResponse* response) override {
-    std::unique_lock<std::mutex> lock(mutex_);
-    auto now = std::chrono::system_clock::now();
-    // Wake up every 1ms to check a value is set by a client.
-    // TODO(okkwon): make it an option.
-    auto wakeup_resolution = std::chrono::milliseconds(1);
-    auto deadline = now + options_.timeout_in_ms;
-    while (1) {
-      if (cv_.wait_for(lock, wakeup_resolution,
-                       [&]() { return kv_map_.count(request->key()); })) {
-        response->set_value(kv_map_[request->key()]);
-        return Status::OK;
-      } else {
-        if (std::chrono::system_clock::now() >= deadline) {
-          return Status(grpc::StatusCode::DEADLINE_EXCEEDED,
-                        "GetValue() exceeded time limit.");
-        }
-      }
-    }
-  }
-
-  Status SetValue(ServerContext* context, const SetValueRequest* request,
-                  SetValueResponse* response) override {
-    if (kv_map_.count(request->key())) {
-      // We expect only one client sets a value with a key only once.
-      return Status(grpc::StatusCode::ALREADY_EXISTS,
-                    "Updating an existing value is not supported");
-    }
-    kv_map_[request->key()] = request->value();
-    return Status::OK;
-  }
-
- private:
-  std::unordered_map<std::string, std::string> kv_map_;
-  Options options_;
-  std::condition_variable cv_;
-  std::mutex mutex_;
-};
-
-class KeyValueStoreServer {
- public:
-  explicit KeyValueStoreServer(
-      const std::string& addr,
-      const KeyValueStoreServiceImpl::Options& options) {
-    ServerBuilder builder;
-    // Listen on the given address without any authentication mechanism.
-    builder.AddListeningPort(addr, grpc::InsecureServerCredentials());
-    // Register "service" as the instance through which we'll communicate with
-    // clients. In this case, it corresponds to an *synchronous* service.
-    service_impl_ = std::make_unique<KeyValueStoreServiceImpl>(options);
-    builder.RegisterService(service_impl_.get());
-    // Finally assemble the server.
-    server_ = builder.BuildAndStart();
-    std::cout << "Server listening on " << addr << std::endl;
-  }
-
-  ~KeyValueStoreServer() {
-    server_->Shutdown();
-    server_->Wait();
-    // The service impl must be freed up first before the server.
-    service_impl_ = nullptr;
-    server_ = nullptr;
-  }
-
-  void Wait() { server_->Wait(); }
-
- private:
-  // Need to keep this service during the server's lifetime.
-  std::unique_ptr<KeyValueStoreServiceImpl> service_impl_;
-  std::unique_ptr<::grpc::Server> server_;
-};
 
 static KeyValueStoreServer* CastToKeyValueStoreServer(
     kvs_server_t* kvs_server) {
@@ -177,7 +67,7 @@ kvs_status_t kvs_client_get(kvs_client_t* kvs_client, const char* key,
                             int key_len, char* value, int value_len) {
   std::string key_str(key, key_len), v;
   KeyValueStoreClient* client = CastToKeyValueStoreClient(kvs_client);
-  Status status = client->GetValue(key_str, v);
+  grpc::Status status = client->GetValue(key_str, v);
   if (status.ok()) {
     memcpy(value, v.data(), value_len);
     return KVS_STATUS_OK;
@@ -196,7 +86,7 @@ kvs_status_t kvs_client_set(kvs_client_t* kvs_client, const char* key,
                             int key_len, const char* value, int value_len) {
   KeyValueStoreClient* client = CastToKeyValueStoreClient(kvs_client);
   std::string key_str(key, key_len), value_str(value, value_len);
-  Status status = client->SetValue(key_str, value_str);
+  grpc::Status status = client->SetValue(key_str, value_str);
   if (status.ok()) {
     return KVS_STATUS_OK;
   } else {
@@ -221,7 +111,7 @@ kvs_status_t kvs_server_create(kvs_server_t** kvs_server, const char* addr,
   }
 
   *kvs_server = nullptr;
-  KeyValueStoreServiceImpl::Options options = {
+  KeyValueStoreServerOptions options = {
       .timeout_in_ms = std::chrono::milliseconds(config->timeout_ms)};
   KeyValueStoreServer* server = new KeyValueStoreServer(addr, options);
   if (!server) {

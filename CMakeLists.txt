@@ -63,8 +63,11 @@ add_library(kvs SHARED
   ${kvs_proto_hdrs}
   client.cc
   client.h
+  server.cc
+  server.h
   kvs.cc
-  kvs.h)
+  kvs.h
+  )
 
 target_link_libraries(kvs
   ${_REFLECTION}
