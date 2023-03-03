@@ -162,7 +162,7 @@ class KeyValueStoreServiceImpl final : public KeyValueStore::Service {
     while (1) {
       if (cv_.wait_for(lock, wakeup_resolution,
                        [&]() { return kv_map_.count(request->key()); })) {
-        response->set_value(get_value_from_map(request->key()));
+        response->set_value(kv_map_[request->key()]);
         return Status::OK;
       } else {
         if (std::chrono::system_clock::now() >= deadline) {
@@ -185,14 +185,6 @@ class KeyValueStoreServiceImpl final : public KeyValueStore::Service {
   }
 
  private:
-  std::string get_value_from_map(const std::string& key) {
-    if (kv_map_.count(key))
-      return kv_map_[key];
-    else
-      return "";
-  }
-
-  // key value
   std::unordered_map<std::string, std::string> kv_map_;
   Options options_;
   std::condition_variable cv_;
