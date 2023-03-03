@@ -16,7 +16,7 @@ static KeyValueStoreClient* CastToKeyValueStoreClient(
   return (KeyValueStoreClient*)(kvs_client);
 }
 
-static kvs_client_t* CastToKVS(KeyValueStoreClient* client) {
+static kvs_client_t* CastToKVSClient(KeyValueStoreClient* client) {
   return (kvs_client_t*)(client);
 }
 
@@ -50,7 +50,7 @@ kvs_status_t kvs_client_create(kvs_client_t** kvs_client, const char* addr,
     return KVS_STATUS_INTERNAL_ERROR;
   }
 
-  *kvs_client = CastToKVS(client);
+  *kvs_client = CastToKVSClient(client);
   return KVS_STATUS_OK;
 }
 
